@@ -28,13 +28,12 @@ export class BaseDataSource {
       const migrations = this.getMigrationsClasses()
       this.dataSource = new DataSource({
         ...this.dbConfig,
-        logging: true,
+        logging: false,
         migrations,
       })
       await this.dataSource.initialize()
       this.queryRunner = this.dataSource.createQueryRunner()
       this.migrationExecutor = new MigrationExecutor(this.dataSource, this.queryRunner)
-      console.log('Initialized')
     } catch (error: any) {
       console.log(`Failed to initialize DataSource. ${error.message}`)
     }
@@ -46,19 +45,53 @@ export class BaseDataSource {
 
   public async executeMigrations(): Promise<void> {
     const migrations = await this.migrationExecutor.executePendingMigrations()
+    if (!migrations.length) {
+      console.log('No pendding migrations.')
+    }
     for (const migration of migrations) {
       console.log(`Migration ${migration.name} executed successfully.`)
     }
   }
 
   public async revertLastMigration(): Promise<void> {
-    const [lastMigration] = await this.getExecutedMigrations()
+    const [lastMigration] = await this.migrationExecutor.getExecutedMigrations()
+    if (!lastMigration) {
+      console.log('No executed migrations.')
+      return
+    }
     await this.migrationExecutor.undoLastMigration()
-    console.log(`Migration ${lastMigration.name} revert successfully.`)
+    console
+      .log(`Migration ${lastMigration.name} reverted successfully.`)
   }
 
-  private async getExecutedMigrations(): Promise<Migration[]> {
-    return this.migrationExecutor.getExecutedMigrations()
+  public async revertAllMigrations(): Promise<void> {
+    const migrations = await this.migrationExecutor.getExecutedMigrations()
+    if (!migrations.length) {
+      console.log('No executed migrations.')
+      return
+    }
+    for (const migration of migrations) {
+      await this.migrationExecutor.undoLastMigration()
+      console.log(`Migration ${migration.name} reverted successfully.`)
+    }
+  }
+
+  public async showStatus(): Promise<void> {
+    const executedMigrations = await this.migrationExecutor.getExecutedMigrations()
+    const pendingMigrations = await this.migrationExecutor.getPendingMigrations()
+
+    const status = {
+      'Executed Migrations': executedMigrations.map(m => m.name),
+      'Pending Migrations': pendingMigrations.map(m => m.name)
+    }
+
+    const statusCount = {
+      'Executed Migrations': executedMigrations.length,
+      'Pending Migrations': pendingMigrations.length
+    }
+
+    console.table(statusCount)
+    console.log(status)
   }
 
   private getMigrationsClasses(): MixedList<Function> {

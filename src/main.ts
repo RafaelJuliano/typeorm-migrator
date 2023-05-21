@@ -18,6 +18,12 @@ async function main() {
     case 'downLast':
       await dataSource.revertLastMigration()
       break
+    case 'down':
+      await dataSource.revertAllMigrations()
+      break
+    case 'status':
+      await dataSource.showStatus()
+      break
     default:
       console.log('No valid command was provided')
       break

@@ -5,9 +5,9 @@ export const getArgs = () => {
     description: 'Exemplo de aplicativo com argparse',
   })
 
-  parser.add_argument('command', { type: 'string', help: 'Migration command' })
+  parser.add_argument('command', { type: 'str', help: 'Migration command' })
   parser.add_argument('-f', '--migrationFolder', {
-    type: 'string',
+    type: 'str',
     help: 'Migrations folder',
     required: true,
   })
